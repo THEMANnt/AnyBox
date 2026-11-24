@@ -14,7 +14,7 @@ void AnyBox::Tests::CheckConcurrency() {
             try {
                 for (std::uint32_t j = 0; j < 64; ++j) {
                     void* allocation = nullptr;
-                    ApuAlloc(&allocation, nullptr, 2048, 2048, j % 3);
+                    ApuAlloc(&allocation, nullptr, 2048, 2048, j % 2 + 1);
                     auto value = static_cast<int>(i + 1);
                     std::memset(allocation, value, 2048);
                     auto* bytes = static_cast<const std::byte*>(allocation);
