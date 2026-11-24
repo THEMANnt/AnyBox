@@ -9,9 +9,9 @@
 
 extern "C" {
 
-std::int32_t D3D12ConfigureVirtualMemoryX(const D3D12VirtualMemoryConfiguration* configuration) noexcept(false);
-std::int32_t D3D12CreateRootSignatureDeserializer(const void* sourceData, std::size_t sourceDataSize, const AnyBox::Guid& interfaceId, void** deserializer) noexcept(false);
-std::int32_t D3D12SerializeVersionedRootSignature(const D3D12VersionedRootSignatureDescription* description, ID3DBlob** blob, ID3DBlob** errorBlob) noexcept(false);
+std::int32_t D3D12ConfigureVirtualMemoryX(D3D12VirtualMemoryConfiguration* configuration) noexcept(false);
+long D3D12CreateRootSignatureDeserializer(const void* sourceData, std::size_t sourceDataSize, const _GUID& interfaceId, void** deserializer) noexcept(false);
+long D3D12SerializeVersionedRootSignature(const D3D12VersionedRootSignatureDescription* description, ID3DBlob** blob, ID3DBlob** errorBlob) noexcept(false);
 std::int32_t D3D12XboxCreateDevice(IGraphicsUnknown* adapter, const D3D12XboxCreateDeviceParameters* parameters, const AnyBox::Guid& interfaceId, void** device) noexcept(false);
 
 }
