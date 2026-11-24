@@ -1,0 +1,13 @@
+add_library(anybox_commands STATIC src/RootState.cpp src/Inline.cpp)
+target_link_libraries(anybox_commands PUBLIC anybox_container anybox_options)
+target_include_directories(anybox_commands PUBLIC include)
+
+if(BUILD_TESTING)
+    add_executable(graphics_commands_tests tests/Main.cpp)
+    target_link_libraries(graphics_commands_tests PRIVATE anybox_commands anybox_test_support)
+    target_compile_definitions(graphics_commands_tests PRIVATE ANYBOX_LIBRARY_NAME="graphics_commands")
+    set_target_properties(graphics_commands_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${ANYBOX_RUNTIME_DIRECTORY}")
+    anybox_add_compiler_runtime(graphics_commands_tests)
+    add_test(NAME graphics.commands COMMAND graphics_commands_tests)
+    set_tests_properties(graphics.commands PROPERTIES TIMEOUT 15)
+endif()

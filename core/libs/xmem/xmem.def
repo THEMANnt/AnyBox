@@ -8,8 +8,11 @@ EXPORTS
     XMemFreePhysicalPages
     XMemGetWorkingSetStatistics
     XMemIsToolsMemAvailable
+    XMemRegisterGraphicsMemoryConfiguration
     XMemMapPhysicalPages
     XMemMapPhysicalPagesScatter
     XMemTransferMemory
     XMemVirtualAlloc
     XMemVirtualQuery
+    AnyBoxAcquirePhysicalPages
+    AnyBoxAcquireMappedPhysicalPages

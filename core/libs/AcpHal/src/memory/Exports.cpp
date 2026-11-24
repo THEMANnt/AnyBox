@@ -4,15 +4,18 @@
 
 #include <stdexcept>
 
-std::int32_t ApuAlloc(void** allocation, void* baseAddress, std::uint32_t size, std::uint32_t alignment, std::uint32_t flags) noexcept(false) {
+std::int32_t ApuAlloc(void** allocation, std::uint32_t* apuAddress, std::uint32_t size, std::uint32_t alignment, std::uint32_t flags) noexcept(false) {
     if (!allocation) throw std::invalid_argument("APU allocation output is null");
-    auto* result = AnyBox::AcpHal::GetHeap().Allocate(baseAddress, size, alignment, flags);
+    *allocation = nullptr;
+    if (apuAddress) *apuAddress = 0;
+    auto* result = AnyBox::AcpHal::GetHeap().Allocate(size, alignment, flags);
+    if (apuAddress) *apuAddress = AnyBox::AcpHal::GetHeap().ToApu(result);
     *allocation = result;
     return 0;
 }
 
-std::int32_t ApuCreateHeap(std::uint32_t size, std::uint32_t attributes) noexcept(false) {
-    AnyBox::AcpHal::GetHeap().Create(size, attributes);
+std::int32_t ApuCreateHeap(std::uint32_t normalSize, std::uint32_t shapeSize) noexcept(false) {
+    AnyBox::AcpHal::GetHeap().Create(normalSize, shapeSize);
     return 0;
 }
 

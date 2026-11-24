@@ -2,9 +2,15 @@
 
 ## Build and test on Windows
 
-Use CMake 3.25 or newer and a C++20 compiler targeting x64 Windows. MSVC or `clang-cl` with the MSVC runtime is recommended for testing exception unwinding through title code.
+Use CMake 3.25 or newer and matching C and C++ compilers targeting x64 Windows. AnyBox requires C++20. MSVC or `clang-cl` with the MSVC runtime is recommended for testing exception unwinding through application code.
 
-From the repository root, configure with Visual Studio 2022 and the x64 C++ tools installed.
+From the repository root, initialize the pinned dependencies before configuring CMake.
+
+```powershell
+git submodule update --init --recursive
+```
+
+With Visual Studio 2022 and the x64 C++ tools installed, configure with its x64 generator.
 
 ```powershell
 cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON
@@ -13,7 +19,7 @@ cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64 -DBUILD_TESTING=ON
 For a MinGW GCC build, put the x64 MinGW compiler and Ninja on `PATH`, then configure a separate build directory.
 
 ```powershell
-cmake -S . -B build-mingw -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER=g++ -DBUILD_TESTING=ON
+cmake -S . -B build-mingw -G "Ninja Multi-Config" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DBUILD_TESTING=ON
 ```
 
 Set `$build` to the directory you configured. Build and run the tests in both configurations.
@@ -26,7 +32,7 @@ cmake --build $build --config Release --parallel
 ctest --test-dir $build -C Release --output-on-failure --no-tests=error
 ```
 
-The CTest suite runs without game files. Build output goes to `bin/<configuration>` under the build directory.
+The CTest suite runs without application files. GPU tests require a Vulkan-capable system, and the optional D3D12 validation test requires the Windows graphics debug tools. Build output goes to `bin/<configuration>` under the build directory. See the [README](README.md#building) for the graphics runtime requirements.
 
 ## Report a bug or submit a change
 

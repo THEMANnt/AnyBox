@@ -1,0 +1,57 @@
+#include "Local.hpp"
+#include "Scalar.hpp"
+#include <cast.hpp>
+#include <bit>
+#include <limits>
+
+using namespace ShaderRecompiler;
+using AnyBox::Shader::Dxil::LocalLowering;
+
+LocalLowering::Pointer LocalLowering::resolve(const LLVMBC::Value& value, ScalarLowering& scalar) {
+    if (auto found = pointers.find(&value); found != pointers.end()) return found->second;
+    Pointer pointer{};
+    if (auto found = allocations.find(&value); found != allocations.end()) {
+        pointer = {found->second, value.getType()->getPointerElementType(), &builder.ConstantU64(0), 0};
+    } else if (auto* instruction = LLVMBC::dyn_cast<LLVMBC::GetElementPtrInst>(&value)) {
+        pointer = element(*instruction, scalar);
+    } else {
+        throw std::runtime_error("DXIL pointer does not reference a supported local allocation");
+    }
+    pointers.emplace(&value, pointer);
+    return pointer;
+}
+
+LocalLowering::Pointer LocalLowering::element(const LLVMBC::GetElementPtrInst& instruction, ScalarLowering& scalar) {
+    if (instruction.getNumOperands() < 2) throw std::runtime_error("DXIL local pointer has no element index");
+    auto pointer = resolve(*instruction.getOperand(0), scalar);
+    for (unsigned index = 1; index < instruction.getNumOperands(); ++index) {
+        if (index != 1) {
+            if (pointer.element->getTypeID() != LLVMBC::Type::TypeID::ArrayTyID) throw std::runtime_error("DXIL nested local pointer index requires an array");
+            pointer.element = pointer.element->getArrayElementType();
+        }
+        auto stride = size(*pointer.element);
+        auto* source = instruction.getOperand(index);
+        auto* type = source->getType();
+        if (!type || !type->isIntegerTy() || (type->getIntegerBitWidth() != 32 && type->getIntegerBitWidth() != 64)) throw std::runtime_error("DXIL local pointer index must be a 32-bit or 64-bit integer");
+        auto* constant = LLVMBC::dyn_cast<LLVMBC::ConstantInt>(source);
+        if (constant && pointer.constant) {
+            auto raw = constant->getUniqueInteger().getZExtValue();
+            auto selected = type->getIntegerBitWidth() == 32 ? static_cast<std::int64_t>(std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(raw))) : std::bit_cast<std::int64_t>(raw);
+            if (selected > std::numeric_limits<std::int64_t>::max() / stride || selected < std::numeric_limits<std::int64_t>::min() / stride) throw std::runtime_error("DXIL constant local pointer multiplication overflows");
+            auto bytes = selected * stride;
+            if ((bytes > 0 && *pointer.constant > std::numeric_limits<std::int64_t>::max() - bytes) || (bytes < 0 && *pointer.constant < std::numeric_limits<std::int64_t>::min() - bytes)) throw std::runtime_error("DXIL constant local pointer addition overflows");
+            *pointer.constant += bytes;
+            pointer.offset = &builder.ConstantU64(static_cast<std::uint64_t>(*pointer.constant));
+            continue;
+        }
+        auto& value = scalar.Get(*source);
+        IrValue* extended = &value;
+        if (type->getIntegerBitWidth() == 32) extended = &builder.ConstructU64(value, builder.ShiftRightArithmetic(value, builder.Constant(31)));
+        auto& bytes = builder.Emit(IrOpcode::IMul64, IrType::U64, {extended, &builder.ConstantU64(stride)});
+        pointer.offset = &builder.Emit(IrOpcode::IAdd64, IrType::U64, {pointer.offset, &bytes});
+        pointer.constant.reset();
+    }
+    auto* type = instruction.getType();
+    if (!type || type->getTypeID() != LLVMBC::Type::TypeID::PointerTyID || type->getPointerAddressSpace() != 0 || type->getPointerElementType() != pointer.element) throw std::runtime_error("DXIL local pointer result type does not match its element");
+    return pointer;
+}
