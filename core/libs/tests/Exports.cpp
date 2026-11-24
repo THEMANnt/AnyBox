@@ -27,8 +27,10 @@ const DllExports expected[] = {
     {"xg_xs.dll", {"XGCreateTextureComputer", "XGSuggestSwizzleMode"}},
     {"xmem.dll", {"XMemAlloc", "XMemAllocDefault", "XMemAllocatePhysicalPages", "XMemFree",
                   "XMemFreeDefault", "XMemFreePhysicalPages", "XMemGetWorkingSetStatistics",
-                  "XMemIsToolsMemAvailable", "XMemMapPhysicalPages", "XMemMapPhysicalPagesScatter",
-                  "XMemTransferMemory", "XMemVirtualAlloc", "XMemVirtualQuery"}},
+                  "XMemIsToolsMemAvailable", "XMemRegisterGraphicsMemoryConfiguration",
+                  "XMemMapPhysicalPages", "XMemMapPhysicalPagesScatter", "XMemTransferMemory",
+                  "XMemVirtualAlloc", "XMemVirtualQuery", "AnyBoxAcquirePhysicalPages",
+                  "AnyBoxAcquireMappedPhysicalPages"}},
     {"XCRDAPI.dll", {"DStorageGetFactory"}},
 };
 
