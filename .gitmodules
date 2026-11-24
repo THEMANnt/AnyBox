@@ -1,0 +1,38 @@
+[submodule "3rdparty/opus"]
+	path = 3rdparty/opus
+	url = https://github.com/xiph/opus.git
+[submodule "3rdparty/libdeflate"]
+	path = 3rdparty/libdeflate
+	url = https://github.com/ebiggers/libdeflate.git
+[submodule "3rdparty/zlib"]
+	path = 3rdparty/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "3rdparty/ffmpeg"]
+	path = 3rdparty/ffmpeg
+	url = https://github.com/xenia-project/FFmpeg.git
+	shallow = true
+[submodule "3rdparty/Vulkan-Headers"]
+	path = 3rdparty/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "3rdparty/glslang"]
+	path = 3rdparty/glslang
+	url = https://github.com/KhronosGroup/glslang.git
+[submodule "3rdparty/zydis"]
+	path = 3rdparty/zydis
+	url = https://github.com/zyantific/zydis.git
+[submodule "3rdparty/mesa"]
+	path = 3rdparty/mesa
+	url = https://gitlab.freedesktop.org/mesa/mesa.git
+	shallow = true
+[submodule "3rdparty/anyps5"]
+	path = 3rdparty/anyps5
+	url = https://github.com/boykopovar/AnyPS5.git
+[submodule "3rdparty/SPIRV-Headers"]
+	path = 3rdparty/SPIRV-Headers
+	url = https://github.com/KhronosGroup/SPIRV-Headers.git
+[submodule "3rdparty/dxil-spirv"]
+	path = 3rdparty/dxil-spirv
+	url = https://github.com/HansKristian-Work/dxil-spirv.git
+[submodule "3rdparty/SPIRV-Tools"]
+	path = 3rdparty/SPIRV-Tools
+	url = https://github.com/KhronosGroup/SPIRV-Tools.git

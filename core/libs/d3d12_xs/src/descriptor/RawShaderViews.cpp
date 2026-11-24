@@ -1,0 +1,21 @@
+#include "Descriptions.hpp"
+#include "RawBuffer.hpp"
+#include "../device/Device.hpp"
+#include <anybox/Unimplemented.hpp>
+#include <algorithm>
+
+void AnyBox::Graphics::Device::CreateShaderResourceViewX(Device*, const D3D12_RESOURCE_DESC* resource, const XboxShaderViewDescription* description, std::uint64_t destination) {
+    if (destination == 0 || destination % 16 != 0) throw std::invalid_argument("Xbox extended shader view destination is null or misaligned");
+    auto* output = reinterpret_cast<void*>(static_cast<std::uintptr_t>(destination));
+    if (!resource) {
+        std::memset(output, 0, 32);
+        return;
+    }
+    if (!description || resource->Dimension != D3D12_RESOURCE_DIMENSION_BUFFER) ANYBOX_NOT_IMPLEMENTED();
+    const auto& view = description->view;
+    if (view.ViewDimension != D3D12_SRV_DIMENSION_BUFFER || view.Format != DXGI_FORMAT_R32_TYPELESS || view.Buffer.Flags != D3D12_BUFFER_SRV_FLAG_RAW) ANYBOX_NOT_IMPLEMENTED();
+    if (view.Buffer.StructureByteStride != 0) throw std::invalid_argument("Xbox raw shader view cannot have a structure stride");
+    if (description->address == UINT64_MAX || std::ranges::any_of(description->parameters, [](auto value) { return value != 0; })) ANYBOX_NOT_IMPLEMENTED();
+    auto words = EncodeRawBuffer(description->address, resource->Width, view.Buffer.FirstElement, view.Buffer.NumElements, view.Shader4ComponentMapping);
+    std::memcpy(output, words.data(), sizeof(words));
+}
