@@ -10,16 +10,14 @@ namespace {
 std::uint32_t backingAllocations = 0;
 std::uint32_t backingFrees = 0;
 
-void* Allocate(std::size_t size, std::uint64_t attributes) {
-    AnyBox::Tests::Require(size == 0x100000 && attributes == 0x12340000, "APU backing allocation arguments changed");
+void* Allocate(std::size_t, std::uint64_t) {
     ++backingAllocations;
-    return static_cast<std::byte*>(::operator new(size + 16, std::align_val_t{0x10000})) + 16;
+    throw std::runtime_error("APU allocation incorrectly used title XMem hooks");
 }
 
-void Free(void* memory, std::uint64_t attributes) {
-    AnyBox::Tests::Require(attributes == 0x12340000, "APU backing free attributes changed");
+void Free(void*, std::uint64_t) {
     ++backingFrees;
-    ::operator delete(static_cast<std::byte*>(memory) - 16, std::align_val_t{0x10000});
+    throw std::runtime_error("APU release incorrectly used title XMem hooks");
 }
 
 }
@@ -38,17 +36,17 @@ int main() {
         using namespace AnyBox::Tests;
         Require(!ApuIsVirtualAddressValid(nullptr, 64), "Null APU address is valid");
         Require(ApuMapVirtualAddress(nullptr) == 0 && ApuMapApuAddress(0) == nullptr, "Null APU translations changed");
-        void* output = nullptr;
-        ExpectException<std::logic_error>([&] { ApuAlloc(&output, nullptr, 64, 64, 0); });
         ExpectException<std::invalid_argument>([] { ApuCreateHeap(0, 0); });
+        ExpectException<std::length_error>([] { ApuCreateHeap(0xFFFFFFFF, 0); });
+        ExpectException<std::length_error>([] { ApuCreateHeap(0x100000, 0xFFFFFFFF); });
         Require(backingAllocations == 0, "Rejected APU heap allocated storage");
-        Require(ApuCreateHeap(0x100000, 0x12340000) == 0, "APU heap creation failed");
-        ExpectException<std::logic_error>([] { ApuCreateHeap(0x100000, 0x12340000); });
+        Require(ApuCreateHeap(0x100000, 0x226E00) == 0, "APU heap creation failed");
+        ExpectException<std::logic_error>([] { ApuCreateHeap(0x100000, 0x226E00); });
         CheckAllocation();
         CheckMapping();
         CheckErrors();
         CheckConcurrency();
-        Require(backingAllocations == 1 && backingFrees == 0, "APU heap backing lifetime changed");
+        Require(backingAllocations == 0 && backingFrees == 0, "APU pools invoked title XMem hooks");
         return 0;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';

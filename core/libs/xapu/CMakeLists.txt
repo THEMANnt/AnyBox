@@ -1,3 +1,20 @@
 anybox_add_system_library(xapu src/Exports.cpp xapu.def)
+target_sources(xapu PRIVATE src/codec/OpusDecoder.cpp src/connection/Lifetime.cpp src/connection/Registry.cpp src/connection/Enqueue.cpp src/connection/Decode.cpp)
+target_link_libraries(xapu PRIVATE opus PUBLIC anybox_common)
+
 target_include_directories(xapu PUBLIC include)
-anybox_add_exception_test(xapu)
+
+
+if(BUILD_TESTING)
+    add_executable(xapu_queue_tests tests/connection/Errors.cpp tests/connection/Queue.cpp tests/connection/Main.cpp src/codec/OpusDecoder.cpp)
+    target_link_libraries(xapu_queue_tests PRIVATE xapu opus anybox_options)
+    set_target_properties(xapu_queue_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${ANYBOX_RUNTIME_DIRECTORY}")
+    add_test(NAME xapu.queue COMMAND xapu_queue_tests)
+    set_tests_properties(xapu.queue PROPERTIES TIMEOUT 15)
+    add_executable(xapu_opus_tests tests/codec/Decoder.cpp src/codec/OpusDecoder.cpp)
+    target_link_libraries(xapu_opus_tests PRIVATE opus anybox_options)
+    target_include_directories(xapu_opus_tests PRIVATE src/codec)
+    set_target_properties(xapu_opus_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${ANYBOX_RUNTIME_DIRECTORY}")
+    add_test(NAME xapu.opus COMMAND xapu_opus_tests)
+    set_tests_properties(xapu.opus PROPERTIES TIMEOUT 15)
+endif()

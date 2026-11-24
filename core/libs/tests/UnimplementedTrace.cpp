@@ -1,4 +1,4 @@
-#include <d3d12_xs.hpp>
+#include <chad.hpp>
 #include <xg_xs.hpp>
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -25,7 +26,7 @@
 namespace {
 
 constexpr wchar_t traceVariable[] = L"ANYBOX_TRACE_FILE";
-constexpr auto graphicsExport = "d3d12_xs.dll!D3D12ConfigureVirtualMemoryX";
+constexpr auto dspExport = "chad.dll!XDspConnectWithMaximumStreamLimit";
 constexpr auto textureExport = "xg_xs.dll!XGCreateTextureComputer";
 constexpr std::size_t threadCount = 8;
 constexpr unsigned attempts = 12;
@@ -65,8 +66,12 @@ void ExpectUnimplemented(std::string_view exportName, Call call) {
     throw std::runtime_error("Unimplemented export did not throw");
 }
 
-void CallGraphicsStub() {
-    ExpectUnimplemented(graphicsExport, [] { D3D12ConfigureVirtualMemoryX(nullptr); });
+void CallUnsupportedDspMode() {
+    ExpectUnimplemented(dspExport, [] {
+        std::array<std::byte, 0x10000> memory{};
+        XDspConnection* connection = nullptr;
+        XDspConnectWithMaximumStreamLimit(memory.data(), static_cast<std::uint32_t>(memory.size()), 0, 1, 0, &connection);
+    });
 }
 
 void CallTextureStub() {
@@ -79,7 +84,7 @@ void CheckTrace(const std::filesystem::path& path, const std::array<DWORD, threa
 
     const auto expectedProcess = std::to_string(GetCurrentProcessId());
     std::map<std::string, unsigned> callCounts;
-    unsigned graphicsCalls = 0;
+    unsigned dspCalls = 0;
     unsigned textureCalls = 0;
     std::string line;
     while (std::getline(trace, line)) {
@@ -95,9 +100,9 @@ void CheckTrace(const std::filesystem::path& path, const std::array<DWORD, threa
                 "Trace record is incomplete");
         Require(timestamp.size() == 24 && timestamp[10] == 'T' && timestamp.back() == 'Z', "Trace timestamp is malformed");
         Require(process == expectedProcess, "Trace recorded the wrong process");
-        Require(exportName == graphicsExport || exportName == textureExport, "Trace recorded the wrong export");
+        Require(exportName == dspExport || exportName == textureExport, "Trace recorded the wrong export");
         ++callCounts[thread];
-        if (exportName == graphicsExport) ++graphicsCalls;
+        if (exportName == dspExport) ++dspCalls;
         if (exportName == textureExport) ++textureCalls;
     }
     Require(trace.eof(), "Could not finish reading trace file");
@@ -106,7 +111,7 @@ void CheckTrace(const std::filesystem::path& path, const std::array<DWORD, threa
     for (const auto caller : callers) {
         Require(callCounts[std::to_string(caller)] == attempts, "Worker thread trace lost or duplicated records");
     }
-    Require(graphicsCalls == threadCount * attempts / 2 + 1, "Graphics trace count was wrong");
+    Require(dspCalls == threadCount * attempts / 2 + 1, "DSP trace count was wrong");
     Require(textureCalls == threadCount * attempts / 2 + 1, "Texture trace count was wrong");
 }
 
@@ -117,7 +122,7 @@ int main() {
         const TraceDirectory paths;
 
         Require(SetEnvironmentVariableW(traceVariable, paths.log.c_str()) != 0, "Could not enable tracing");
-        CallGraphicsStub();
+        CallUnsupportedDspMode();
         CallTextureStub();
 
         std::array<DWORD, threadCount> callers{};
@@ -128,7 +133,7 @@ int main() {
                 callers[i] = GetCurrentThreadId();
                 try {
                     for (unsigned attempt = 0; attempt < attempts; ++attempt) {
-                        if (attempt % 2 == 0) CallGraphicsStub();
+                        if (attempt % 2 == 0) CallUnsupportedDspMode();
                         else CallTextureStub();
                     }
                 } catch (...) {
@@ -140,7 +145,7 @@ int main() {
         for (const auto& error : errors) if (error) std::rethrow_exception(error);
 
         Require(SetEnvironmentVariableW(traceVariable, paths.directory.c_str()) != 0, "Could not set an unwritable trace location");
-        CallGraphicsStub();
+        CallUnsupportedDspMode();
         Require(SetEnvironmentVariableW(traceVariable, nullptr) != 0, "Could not disable tracing");
         CallTextureStub();
 

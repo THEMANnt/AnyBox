@@ -10,7 +10,7 @@ add_subdirectory(XCRDAPI)
 
 if(BUILD_TESTING)
     add_executable(anybox_unimplemented_trace_tests tests/UnimplementedTrace.cpp)
-    target_link_libraries(anybox_unimplemented_trace_tests PRIVATE d3d12_xs xg_xs)
+    target_link_libraries(anybox_unimplemented_trace_tests PRIVATE chad xg_xs)
     set_target_properties(anybox_unimplemented_trace_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${ANYBOX_RUNTIME_DIRECTORY}")
     add_test(NAME anybox.unimplemented_trace COMMAND anybox_unimplemented_trace_tests)
     set_tests_properties(anybox.unimplemented_trace PROPERTIES TIMEOUT 15)
