@@ -7,7 +7,8 @@ Use CMake 3.25 or newer and matching C and C++ compilers targeting x64 Windows. 
 From the repository root, initialize the pinned dependencies before configuring CMake.
 
 ```powershell
-git submodule update --init --recursive
+git submodule update --init
+git submodule update --init --recursive -- 3rdparty/dxil-spirv 3rdparty/zydis
 ```
 
 With Visual Studio 2022 and the x64 C++ tools installed, configure with its x64 generator.
