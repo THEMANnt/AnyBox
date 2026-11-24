@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/CompilerRuntime.cmake")
+
 function(anybox_export_symbols target definitionFile)
     get_filename_component(definitionPath "${definitionFile}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
     if(MSVC)
@@ -20,20 +22,7 @@ function(anybox_add_system_library target)
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/$<CONFIG>"
         WINDOWS_EXPORT_ALL_SYMBOLS OFF
     )
-    if(MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if(NOT TARGET anybox_compiler_runtime)
-            get_filename_component(compilerDirectory "${CMAKE_CXX_COMPILER}" DIRECTORY)
-            add_custom_target(anybox_compiler_runtime COMMAND "${CMAKE_COMMAND}" -E make_directory "${ANYBOX_RUNTIME_DIRECTORY}" VERBATIM)
-            foreach(runtime IN ITEMS libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll)
-                set(runtimePath "${compilerDirectory}/${runtime}")
-                if(NOT IS_ABSOLUTE "${runtimePath}" OR NOT EXISTS "${runtimePath}")
-                    message(FATAL_ERROR "Required compiler runtime was not found: ${runtime}")
-                endif()
-                add_custom_command(TARGET anybox_compiler_runtime POST_BUILD COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${runtimePath}" "${ANYBOX_RUNTIME_DIRECTORY}" VERBATIM)
-            endforeach()
-        endif()
-        add_dependencies(${target} anybox_compiler_runtime)
-    endif()
+    anybox_add_compiler_runtime(${target})
     add_dependencies(libs ${target})
 endfunction()
 

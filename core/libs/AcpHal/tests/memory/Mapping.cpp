@@ -17,4 +17,7 @@ void AnyBox::Tests::CheckMapping() {
     *static_cast<std::byte*>(ApuMapApuAddress(address + 123)) = std::byte{0x7B};
     Require(bytes[123] == std::byte{0x7B}, "APU address did not reference CPU storage");
     ApuFree(allocation);
+    Require(!ApuIsVirtualAddressValid(allocation, 0), "Freed APU storage is still valid");
+    ExpectException<std::invalid_argument>([&] { ApuMapVirtualAddress(allocation); });
+    ExpectException<std::invalid_argument>([&] { ApuMapApuAddress(address); });
 }

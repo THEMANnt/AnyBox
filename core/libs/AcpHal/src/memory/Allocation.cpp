@@ -1,30 +1,24 @@
-#include "Heap.hpp"
+#include "Pool.hpp"
 
 #include <bit>
 #include <iterator>
 #include <new>
+#include <algorithm>
+#include <limits>
 #include <stdexcept>
 
-void* AnyBox::AcpHal::Heap::Allocate(void* requestedAddress, std::uint32_t size, std::uint32_t alignment, std::uint32_t flags) {
+void* AnyBox::AcpHal::Pool::Allocate(std::uint32_t size, std::uint32_t alignment) {
     if (size == 0) throw std::invalid_argument("APU allocation size must be nonzero");
-    if (!std::has_single_bit(alignment) || alignment > 0x10000) throw std::invalid_argument("Unsupported APU alignment");
-    if (flags > 2) throw std::invalid_argument("Unsupported APU allocation flags");
+    if (!std::has_single_bit(alignment) || alignment < 4) throw std::invalid_argument("Invalid APU alignment");
+    alignment = std::max(alignment, 256U);
+    if (size > std::numeric_limits<std::uint32_t>::max() - (alignment - 1)) throw std::overflow_error("APU allocation size overflows");
+    size = (size + alignment - 1) & ~(alignment - 1);
     std::lock_guard lock(mutex);
-    auto* base = memory.load(std::memory_order_relaxed);
+    auto* base = memory.get();
     if (!base) throw std::logic_error("APU heap has not been created");
-    auto baseValue = reinterpret_cast<std::uintptr_t>(base);
-    auto requested = reinterpret_cast<std::uintptr_t>(requestedAddress);
-    if (requestedAddress && (requested < baseValue || requested - baseValue >= memorySize || requested % alignment != 0)) {
-        throw std::invalid_argument("Requested APU address is outside the heap or misaligned");
-    }
     for (auto it = blocks.begin(); it != blocks.end(); ++it) {
         if (it->allocated) continue;
-        auto padding = (alignment - (baseValue + it->offset) % alignment) % alignment;
-        if (requestedAddress) {
-            auto offset = requested - baseValue;
-            if (offset < it->offset || offset - it->offset >= it->size) continue;
-            padding = offset - it->offset;
-        }
+        auto padding = (alignment - (static_cast<std::uint64_t>(busBase) + it->offset) % alignment) % alignment;
         if (padding > it->size || size > it->size - padding) continue;
         auto start = it->offset + padding;
         auto remaining = it->size - padding - size;
@@ -40,10 +34,10 @@ void* AnyBox::AcpHal::Heap::Allocate(void* requestedAddress, std::uint32_t size,
     throw std::bad_alloc();
 }
 
-void AnyBox::AcpHal::Heap::Free(void* allocation) {
+void AnyBox::AcpHal::Pool::Free(void* allocation) {
     if (!allocation) return;
     std::lock_guard lock(mutex);
-    auto* base = memory.load(std::memory_order_relaxed);
+    auto* base = memory.get();
     if (!base) throw std::logic_error("APU heap has not been created");
     auto address = reinterpret_cast<std::uintptr_t>(allocation);
     auto baseValue = reinterpret_cast<std::uintptr_t>(base);
